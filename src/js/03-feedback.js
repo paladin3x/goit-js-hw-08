@@ -1,44 +1,54 @@
 import throttle from "lodash.throttle";
-
-const refForm = document.querySelector(".feedback-form");
-const refTextArea = document.querySelector("textarea");
-const refEmailInput = document.querySelector("input");
-
-populateMessegOutPut();
-
-const KEYOBJECT_DATA = "feedback-data";
-
-refForm.addEventListener('submit', onFormSubmit);
-function onFormSubmit(evt) { 
-    evt.preventDefault();
-    evt.currentTarget.reset();
-    localStorage.removeItem("feedback-msg");
-    localStorage.removeItem("feedback-email");
-};
+const formEl = document.querySelector('.feedback-form');
+const storageKey = 'feedback-form-state';
 
 
-refTextArea.addEventListener("input", throttle(onTextAreaInput,500));
-function onTextAreaInput(evt) {
-    const messageText = evt.target.value;
-    localStorage.setItem("feedback-msg", messageText);
-};
+const {
+  elements: { email, message },
+} = formEl;
 
+// Зчитування даних з полів та збереження їх у вигляді об'єкту
+formEl.addEventListener('input', throttle(saveDataForm, 500));
 
-refEmailInput.addEventListener("input", throttle(onEmailInput,500));
-function onEmailInput(evt) {
-    const emailValue = evt.target.value;
-    localStorage.setItem('feedback-email' , emailValue)
+function saveDataForm() {
+  const formData = {
+    email: '',
+    message: '',
+  };
+
+  formData.email = email.value;
+  formData.message = message.value;
+  localStorage.setItem(storageKey, JSON.stringify(formData));
 }
 
+// Заповнення полів форми, збереженими даними у сховище
+document.addEventListener('DOMContentLoaded', loadDataForm);
 
-function populateMessegOutPut() {
-    const saveEmail = localStorage.getItem("feedback-email")
-    if (saveEmail) {
-        refEmailInput.value = saveEmail;
+function loadDataForm() {
+  if (!localStorage.getItem(storageKey)) {
+    email.removeAttribute('value');
+    message.textContent = '';
+  } else {
+    const savedDataFormObj = JSON.parse(localStorage.getItem(storageKey));
+    if (savedDataFormObj.email) {
+      email.setAttribute('value', savedDataFormObj.email);
     }
-    const savedMsg = localStorage.getItem("feedback-msg")
-    if (savedMsg) {
-        refTextArea.value = savedMsg;
-    }
+    message.textContent = savedDataFormObj.message;
+  }
 }
 
+// Очищення сховища і полів, та виведення у консоль об'єкта з поточними даними
+formEl.addEventListener('submit', update);
+
+function update(event) {
+  event.preventDefault();
+
+  if (!localStorage.getItem(storageKey) || !message.value || !email.value) {
+    return;
+  } else {
+    console.log(JSON.parse(localStorage.getItem(storageKey)));
+    localStorage.clear();
+    formEl.reset();
+    loadDataForm();
+  }
+}
